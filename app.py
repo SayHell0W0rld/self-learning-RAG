@@ -1,4 +1,9 @@
+"""
+Day 19-20 — RAG 项目 UI（Streamlit）
+智能文档问答系统
+"""
 import os
+from dotenv import load_dotenv
 import streamlit as st
 from langchain_community.document_loaders import PyPDFLoader, TextLoader, Docx2txtLoader
 from langchain_text_splitters import RecursiveCharacterTextSplitter
@@ -9,6 +14,17 @@ from langchain_openai import ChatOpenAI
 from langchain_classic.chains.conversational_retrieval.base import ConversationalRetrievalChain
 from langchain_classic.memory import ConversationBufferWindowMemory
 import tempfile
+
+# ===== 加载环境变量 =====
+load_dotenv()
+
+# ===== 配置常量 =====
+API_KEY = os.getenv("API_KEY")
+BASE_URL = os.getenv("BASE_URL")
+MODEL_NAME = os.getenv("MODEL_NAME", "mimo")
+EMBEDDING_MODEL = os.getenv("EMBEDDING_MODEL", "BAAI/bge-large-zh-v1.5")
+EMBEDDING_MODEL_PATH = os.getenv("EMBEDDING_MODEL_PATH", "./models/bge-large-zh-v1.5")
+PERSIST_DIR = os.getenv("PERSIST_DIR", "./chroma_db")
 
 # ===== 页面配置 =====
 st.set_page_config(
@@ -22,9 +38,9 @@ with st.sidebar:
     st.title("⚙️ 配置")
 
     # LLM 配置
-    api_key = st.text_input("API Key", type="password")
-    base_url = st.text_input("API 端点", value="https://your-endpoint")
-    model_name = st.text_input("模型名", value="mimo")
+    api_key = st.text_input("API Key", type="password", value=API_KEY)
+    base_url = st.text_input("API 端点", value=BASE_URL)
+    model_name = st.text_input("模型名", value=MODEL_NAME)
     temperature = st.slider("Temperature", 0.0, 1.0, 0.3, 0.1)
     k_value = st.slider("检索数量 k", 1, 10, 3)
 
@@ -86,8 +102,8 @@ if uploaded_files and api_key:
         chunks = splitter.split_documents(all_docs)
 
         # Embedding + 存储
-        embedding = HuggingFaceEmbeddings(model_name="BAAI/bge-large-zh-v1.5")
-        persist_dir = "./chroma_db_app"
+        embedding = HuggingFaceEmbeddings(model_name=EMBEDDING_MODEL)
+        persist_dir = PERSIST_DIR
         if os.path.exists(persist_dir):
             import shutil
             shutil.rmtree(persist_dir)
